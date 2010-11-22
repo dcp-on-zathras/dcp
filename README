@@ -1,0 +1,56 @@
+dcp is a distributed config pushing tool
+
+The intention is to have an admin host which holds a collection of
+sparse directory for a variety of machines.
+
+These are kept under version control and can be:
+* pushed to the host
+* compared to the host
+* aligned with peers
+
+Support two operational models:
+* change the host and record later
+* stage on the server and push
+
+Need to:
+  consider user that runs dcp has to have ssh root equivalence for rsync
+  --fake-super ... but this makes changing ownership etc hard.
+
+Using sudoers:
+  Defaults env_keep+="GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL"
+to pass-through environment for git logs.
+
+* init
+  Creates a site area
+
+* add_host
+  create a host VCS repository
+  ?? Should this take a set of files to initialise (avoids the empty
+  repo issue)
+
+* pull_files
+  Updates a repo from the remote host.
+
+  usage: pull_files [-r] [-p] [-f] (-h <hosts_list> | <host> ) [<files>]
+     Pull files tracked by dcp from host and commit them to the sparse tree
+     -r  refresh files from host to repository
+     -p  pull (and add) any pending files mentioned on the host
+         in the /var/dcp/register file
+     -f  Pull even if there are uncommitted changes
+     -h  <hosts_list> is a file containing list of hosts to push to
+     <files> specified manually will be suject to a 'git add' and
+             'git commit' if needed
+
+
+* push_files
+  send the repository files to the host
+  usage: push_files [-f] [-a] [-n] (-h <hosts_list> | <host>) [<files>]
+    Push files tracked by dcp to host
+    -a  Push all files in the tree (not default)
+    -f  Push even if there are uncommitted changes
+    -n  dry-run
+    -h  file containing list of hosts to push to
+
+* status
+  reports the git status and any files that are out of sync between
+  the repo and the host

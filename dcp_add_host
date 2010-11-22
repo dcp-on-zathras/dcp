@@ -1,0 +1,46 @@
+#!/bin/bash
+
+. /srv/dcp/bin/dcp_common
+
+usage()
+{
+    cat <<EOF
+    $1 <host>
+       Register a host for dcp
+EOF
+    return 0
+}
+
+if [ $# -ne 1 ]; then
+        usage $(basename $0)
+        exit 1
+fi
+
+host=$1
+
+if ! ping -c1 $host >/dev/null 2>&1 ; then
+    echo No such host : $host
+    exit 1
+fi
+
+if [ -e ${HOST_STORE}/$host ]; then
+   echo "There is an existing store for $host"
+   exit 1
+fi
+
+# This creates a git repo per host.
+# It isn't checked out yet
+git init ${HOST_STORE}/$host
+(
+    cd ${HOST_STORE}/$host
+    echo '*~' > .gitignore
+    git add .gitignore
+    git commit -m"Initial config for $host" -e
+)
+
+( 
+    cd ${SITE_STORE}
+    # We'll link to the nearby repo in ../$host
+    git submodule add ${HOST_STORE}/$host $host
+    git commit -m "added host $host"
+)

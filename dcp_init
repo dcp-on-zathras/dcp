@@ -1,0 +1,30 @@
+#!/bin/bash
+
+. /srv/dcp/bin/dcp_common
+
+usage()
+{
+    cat <<EOF
+    $1 
+       Create the site area
+EOF
+    return 0
+}
+
+if [ $# -ne 0 ]; then
+        usage $(basename $0)
+        exit 1
+fi
+
+
+if [ -e ${SITE_STORE} ]; then
+   echo "There is an existing site store"
+   exit 1
+fi
+
+# This creates a git repo for the site
+git init ${SITE_STORE}
+(
+    cd ${SITE_STORE}
+)
+

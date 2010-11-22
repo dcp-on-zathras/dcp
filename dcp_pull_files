@@ -1,0 +1,99 @@
+#!/bin/bash
+# Pull from host
+
+. /srv/dcp/bin/dcp_common
+
+usage()
+{
+    cat <<EOF
+    usage: $1 [-r] [-p] [-f] (-h <hosts_list> | <host> ) [<files>]
+       Pull files tracked by dcp from host and commit them to the sparse tree
+       -r  refresh files from host to repository
+       -p  pull (and add) any pending files mentioned on the host
+           in the /var/dcp/register file
+       -f  Pull even if there are uncommitted changes
+       -h  <hosts_list> is a file containing list of hosts to push to
+       <files> specified manually will be suject to a 'git add' and
+              'git commit' if needed
+EOF
+    return 0
+}
+
+while getopts ":rpfh:" opt; do
+    case $opt in
+	r ) refresh=1;;
+	p ) pending=1;;
+	f ) force=1;;
+	h ) host_list=$OPTARG;;
+	\? ) usage
+            exit 1;;
+	: ) echo "Option -$OPTARG requires an argument." >&2
+	    usage
+	    exit 1;;
+	* ) usage
+            exit 1;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+pull_ () {
+    host=$1
+    shift
+
+    if ! ping -c1 $host >/dev/null 2>&1 ; then
+	echo $host not available
+	return
+    fi
+
+    cd ${HOST_STORE}/$host
+
+    # Check git status
+    if [[ -n "$(git status --porcelain 2>&1)" ]]; then
+	echo Some local changes not comitted for $host
+	if [[ -z "$force" ]]; then
+	    git status --porcelain
+	    return
+	fi
+	echo "Forcing pull as requested"
+    fi
+
+    # zero the filelist
+    > ../${host}.files
+    # Now do one or more of: refresh; pull pending; pull specified files
+    [[ -n "$refresh" ]] && find . -name .git -prune -o -type f -print >> ../${host}.files
+    [[ -n "$pending" ]] && ssh $host cat /var/dcp/register 2\>/dev/null \; rm -f /var/dcp/register  >> ../${host}.files
+    if [[ $# -gt 0 ]]; then
+	for f in "${@#/}"; do  # ${PARAM#/} removes prefix of '/' to make paths relative	    
+	    [[ -f $f ]] && git add $f
+	    echo $f >> ../${host}.files
+	done
+	cat <<EOF > /tmp/dcpmsg$$
+$host : added files
+$*
+EOF
+	echo add commit:
+	git commit -F /tmp/dcpmsg$$  -e
+      
+    fi
+    # Now get the latest version
+    rsync -a -v --itemize-changes --files-from=../${host}.files root@$host:/ .
+    # Add everything to git
+    git add .
+    # Ask for a comment
+    cat <<EOF > /tmp/dcpmsg$$
+$host : pulled updates
+EOF
+    echo update commit:
+    git commit -F /tmp/dcpmsg$$ -e
+    echo FILES:
+    cat ../${host}.files
+}
+
+# Which hosts need a pull
+if [[ -n $host_list ]]; then
+    while read -u 8 host; do
+	pull_ $host "$@"
+    done 8< $host_list
+else
+    pull_ "$@"
+fi
