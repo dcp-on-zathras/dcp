@@ -42,6 +42,13 @@ status_ () {
         # get the filelist
 	find . -name .git -prune -o -type f -print > ../${host}.files
 	rsync -a --dry-run --itemize-changes --files-from=../${host}.files root@$host:/ . 2>/dev/null
+	# If there is a remote change we could:
+	# git stash... pull... diff... reset, restore stash
+#	git stash
+#	rsync -a -v --itemize-changes --files-from=../${host}.files root@$host:/ .
+	# Check remote pending
+	echo pending files:
+	ssh $host cat /var/dcp/register 2\>/dev/null
     else
 	echo "($host unreachable)"
     fi
