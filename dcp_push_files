@@ -20,10 +20,10 @@ n_args=2
 while getopts ":afnh:" opt; do
     case $opt in
 	a ) all=1
-	    n_args=1
+	    n_args=1;;
 	f ) force=1;;
 	n ) dry=--dry-run;;
-	h ) host_list=$OPTARG
+	h ) host_list=$OPTARG;;
 	\? ) usage
             exit 1;;
 	: ) echo "Option -$OPTARG requires an argument." >&2
