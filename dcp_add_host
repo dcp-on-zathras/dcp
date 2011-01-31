@@ -5,22 +5,37 @@
 usage()
 {
     cat <<EOF
-    $1 <host>
+
+    usage: $1 [-r] [-p] [-f] (-h <hosts_list> | <host> ) [<files>]
+
        Register a host for dcp
+       -p  skip pinging the host, if you know it is up but doesn't allow pings.
+
 EOF
     return 0
 }
 
-if [ $# -ne 1 ]; then
+while getopts ":p" opt; do
+    case $opt in
+        p ) skipping=1;;
+        * ) usage
+            exit 1;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+if [ $# -eq 0 ]; then
         usage $(basename $0)
         exit 1
 fi
 
 host=$1
 
+if [[ ! $skipping ]]; then
 if ! ping -c1 $host >/dev/null 2>&1 ; then
     echo No such host : $host
     exit 1
+fi
 fi
 
 if [ -e ${HOST_STORE}/$host ]; then

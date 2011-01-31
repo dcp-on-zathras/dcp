@@ -40,10 +40,10 @@ pull_ () {
     host=$1
     shift
 
-    if ! ping -c1 $host >/dev/null 2>&1 ; then
-	echo $host not available
-	return
-    fi
+#    if ! ping -c1 $host >/dev/null 2>&1 ; then
+#	echo $host not available
+#	return
+#    fi
 
     cd ${HOST_STORE}/$host
 
