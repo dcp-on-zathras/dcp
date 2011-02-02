@@ -75,7 +75,7 @@ pull_ () {
     [[ -n "$pending" ]] && ssh $host cat /var/dcp/register 2\>/dev/null \; rm -f /var/dcp/register  >> ../${host}.files
 
     # Get an updated manifest from the host
-    [[ -n "$manifest" ]] && ssh $host dpkg-query -W 2\>/dev/null > ../${host}.manifest
+    [[ -n "$manifest" ]] && ssh $host dpkg-query -W 2\>/dev/null > .manifest
 
     if [[ $# -gt 0 ]]; then
 	for f in "${@#/}"; do  # ${PARAM#/} removes prefix of '/' to make paths relative	    
