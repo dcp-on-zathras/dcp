@@ -6,10 +6,11 @@ usage()
 {
     cat <<EOF
 
-    usage: $1 [-r] [-p] [-f] (-h <hosts_list> | <host> ) [<files>]
+    usage: $1 [-p] <host>
 
        Register a host for dcp
        -p  skip pinging the host, if you know it is up but doesn't allow pings.
+       Will update the setup for any already registered host
 
 EOF
     return 0
@@ -32,30 +33,50 @@ fi
 host=$1
 
 if [[ ! $skipping ]]; then
-if ! ping -c1 $host >/dev/null 2>&1 ; then
-    echo No such host : $host
-    exit 1
-fi
+    if ! ping -c1 $host >/dev/null 2>&1 ; then
+	echo No such host : $host
+	exit 1
+    fi
 fi
 
 if [ -e ${HOST_STORE}/$host ]; then
-   echo "There is an existing store for $host"
-   exit 1
+   echo "There is an existing store for $host, updating"
+   existing=1
 fi
 
-# This creates a git repo per host.
-# It isn't checked out yet
-git init ${HOST_STORE}/$host
-(
-    cd ${HOST_STORE}/$host
+# Create a git repo for the host.
+if [[ -z "$existing" ]]; then
+    git init ${HOST_STORE}/$host
+fi
+
+# Set or update the git hook
+cd ${HOST_STORE}/$host
+cat <<'EOF' > .git/hooks/pre-commit
+set -e
+if [ ! -e .metadata ]; then
+    metastore --save
+    git add .metadata
+fi
+# metastore doesn't produce the same output file for the same metadata
+# everytime, so avoid changing the file if nothing really changed.
+if [ ! -z "$(metastore --compare)" ]; then
+    metastore --save
+    git add .metadata
+fi
+EOF
+chmod +x .git/hooks/pre-commit
+
+if [[ -z "$existing" ]]; then
     echo '*~' > .gitignore
     git add .gitignore
     git commit -m"Initial config for $host" -e
-)
+fi
 
-( 
-    cd ${SITE_STORE}
-    # We'll link to the nearby repo in ../$host
+# Now update the site repo which has all the hosts as submodules
+# This isn't used yet.
+cd ${SITE_STORE}
+# We'll link to the nearby repo in ../$host
+if [[ -z "$existing" ]]; then
     git submodule add ${HOST_STORE}/$host $host
     git commit -m "added host $host"
-)
+fi
