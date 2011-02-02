@@ -13,6 +13,7 @@ usage()
            in the /var/dcp/register file
        -m  Pull an updated "installed package" manifest
        -f  Pull even if there are uncommitted changes
+       -a  All hosts
        -h  <hosts_list> is a file containing list of hosts to push to
        <files> specified manually will be suject to a 'git add' and
               'git commit' if needed. Note that these files may be given
@@ -21,13 +22,14 @@ EOF
     return 0
 }
 
-while getopts "rpmfh:" opt; do
+while getopts "arpmfh:" opt; do
     case $opt in
+	a ) host_list=$(cd $HOST_STORE; find * -maxdepth 0  -type d);;
 	r ) refresh=1;;
 	p ) pending=1;;
 	m ) manifest=1;;
 	f ) force=1;;
-	h ) host_list=$OPTARG;;
+	h ) host_list=$(cat $OPTARG);;
 	\? ) usage
             exit 1;;
 	: ) echo "Option -$OPTARG requires an argument." >&2
@@ -101,9 +103,9 @@ EOF
 
 # Which hosts need a pull
 if [[ -n $host_list ]]; then
-    while read -u 8 host; do
+    for host in $host_list; do
 	pull_ $host "$@"
-    done 8< $host_list
+    done
 else
     pull_ "$@"
 fi
