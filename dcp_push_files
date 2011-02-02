@@ -56,7 +56,18 @@ push_ () {
 	[[ -z "$force" ]] && return
 	echo "forcing push as requested"
     fi
-	
+
+    # Check that the metadata is correct before pushing
+    if [ ! -z "$(metastore --compare)" ]; then
+	echo "Metadata for $host appears to be wrong:"
+	metastore --compare
+	echo If this looks OK then to restore the metadata:
+	echo cd ${HOST_STORE}$host
+	echo metastore --apply --mtime
+	[[ -z "$force" ]] && return
+	echo "forcing push as requested"
+    fi
+
     # zero the filelist
     > ../${host}.files
     # Now: either push all or just specified files
