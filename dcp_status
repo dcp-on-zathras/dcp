@@ -51,6 +51,10 @@ status_ () {
 #	rsync -a -v --itemize-changes --files-from=../${host}.files root@$host:/ .
 	# Check remote pending
 	pending_files=$(ssh -x $host cat /var/dcp/register 2\>/dev/null)
+        # Get an updated manifest from the host
+	ssh $host dpkg-query -W 2\>/dev/null > ../${host}.manifest.pending
+	manifest_diff=$(diff -uN ../${host}.manifest ../${host}.manifest.pending)
+#	rm -f ../${host}.manifest.pending
     else
 	rsync_files="(No rsync data: $host unreachable)"
 	pending_files="(No rsync data: $host unreachable)"
@@ -83,6 +87,10 @@ status_ () {
     if [[ ! -z "$pending_files" ]]; then
 	echo "Files awaiting pull from remote host :"
 	echo $pending_files
+    fi
+    if [[ ! -z "$manifest_diff" ]]; then
+	echo "Installed package changes :"
+	echo $manifest_diff
     fi
     [[ ! -z "$activity$noisy" ]] && echo "No changes"
 }
