@@ -21,7 +21,7 @@ EOF
     return 0
 }
 
-while getopts "rpfh:" opt; do
+while getopts "rpmfh:" opt; do
     case $opt in
 	r ) refresh=1;;
 	p ) pending=1;;
@@ -70,7 +70,7 @@ pull_ () {
     # zero the filelist
     > ../${host}.files
     # Now do one or more of: refresh; pull pending; pull specified files
-    [[ -n "$refresh" ]] && find . -name .git -prune -o -name .metadata -prune -o  -name .gitignore -prune -o -type f -print > ../${host}.files
+    [[ -n "$refresh" ]] && find . -name .git -prune -o \( \! -name .metadata \! -name .gitignore \! -name . \) \( -type f -o -type l -o -type d \) -print > ../${host}.files
 
     [[ -n "$pending" ]] && ssh $host cat /var/dcp/register 2\>/dev/null \; rm -f /var/dcp/register  >> ../${host}.files
 

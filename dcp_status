@@ -42,7 +42,7 @@ status_ () {
     fi
     if ping -c1 $host >/dev/null 2>&1 ; then
         # get the filelist, ignoring the git repo and the metatadata
-	find . -name .git -prune -o -name .metadata -prune -o  -name .gitignore -prune -o -type f -print > ../${host}.files
+	find . -name .git -prune -o \( \! -name .metadata \! -name .gitignore \! -name . \) \( -type f -o -type l -o -type d \) -print > ../${host}.files
 	# Now get a list of changed files
 	rsync_files=$(rsync -e 'ssh -x' -a -x --dry-run --itemize-changes --exclude ./  --files-from=../${host}.files root@$host:/ . )
 	# If there is a remote change we could:
@@ -52,8 +52,8 @@ status_ () {
 	# Check remote pending
 	pending_files=$(ssh -x $host cat /var/dcp/register 2\>/dev/null)
         # Get an updated manifest from the host
-	ssh $host dpkg-query -W 2\>/dev/null > ../${host}.manifest.pending
-	manifest_diff=$(diff -uN ../${host}.manifest ../${host}.manifest.pending)
+	ssh -x $host dpkg-query -W 2\>/dev/null > ../${host}.manifest.pending
+	manifest_diff=$(diff --unchanged-line-format="" --old-line-format="removed  : %L" --new-line-format="installed: %L" -N ../${host}.manifest ../${host}.manifest.pending)
 #	rm -f ../${host}.manifest.pending
     else
 	rsync_files="(No rsync data: $host unreachable)"
@@ -61,7 +61,7 @@ status_ () {
     fi
     metastore_compare=$(metastore --compare)
 
-    if [[ ! -z "$git_status$metastore_compare$rsync_files$pending_files" ]]; then
+    if [[ ! -z "$git_status$metastore_compare$rsync_files$pending_files$manifest_diff" ]]; then
 	activity=1
     fi
 
@@ -92,7 +92,7 @@ status_ () {
 	echo "Installed package changes :"
 	echo "$manifest_diff"
     fi
-    [[ ! -z "$activity$noisy" ]] && echo "No changes"
+    [[ -z "$activity$noisy" ]] && echo "No changes"
 }
 
 
