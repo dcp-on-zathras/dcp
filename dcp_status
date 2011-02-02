@@ -68,29 +68,29 @@ status_ () {
     [[ ! -z "$activity$noisy" ]] && echo "$host"
     if [[ ! -z "$git_status" ]]; then
 	echo "Files not in sync with local git :"
-	echo $git_status
+	echo "$git_status"
 	echo
 	if [[ -n "$verbose" ]]; then
 	    echo "git diff :"
-	    echo $git_diff
+	    echo "$git_diff"
 	    echo
 	fi
     fi
     if [[ ! -z "$metastore_compare" ]]; then
 	echo "Files with attribute changes compared to local git :"
-	echo $metastore_compare
+	echo "$metastore_compare"
     fi
     if [[ ! -z "$rsync_files" ]]; then
 	echo "Files not in sync with remote host :"
-	echo $rsync_files
+	echo "$rsync_files"
     fi
     if [[ ! -z "$pending_files" ]]; then
 	echo "Files awaiting pull from remote host :"
-	echo $pending_files
+	echo "$pending_files"
     fi
     if [[ ! -z "$manifest_diff" ]]; then
 	echo "Installed package changes :"
-	echo $manifest_diff
+	echo "$manifest_diff"
     fi
     [[ ! -z "$activity$noisy" ]] && echo "No changes"
 }
@@ -106,7 +106,7 @@ fi
     
 for h in $hosts; do
     if [[ ! -z "$list_files" ]]; then
-	echo Files managed for $h :
+	echo "Files managed for $h :"
 	sed 's@^./@/@' ${HOST_STORE}/${h}.files
     else
 	status_ $h
