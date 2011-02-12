@@ -42,7 +42,7 @@ status_ () {
     fi
     if ping -c1 $host >/dev/null 2>&1 ; then
         # get the filelist, ignoring the git repo and the metatadata
-	find . -name .git -prune -o \( \! -name .metadata \! -name .gitignore \! -name .manifest* \! -name . \) \( -type f -o -type l -o -type d \) -print > ../${host}.files
+	find . -name .git -prune -o \( \! -name .metadata \! -name .gitignore \! -name .manifest* \! -name . \) \( -type f -o -type l \) -print > ../${host}.files
 	# Now get a list of changed files
 	rsync_files=$(rsync -e 'ssh -x' -a -x --dry-run --itemize-changes --exclude ./  --files-from=../${host}.files root@$host:/ . )
 	# If there is a remote change we could:
