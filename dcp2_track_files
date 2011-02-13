@@ -1,0 +1,103 @@
+#!/bin/bash
+# Register files to track
+
+. /srv/dcp/bin/dcp2_common
+
+usage()
+{
+    cat <<EOF
+    usage: $1 [-l] [-m <message>]  (-a | -h <hosts_list_file> | <host> ) [<files> <dirs>]
+       Track files monitored by dcp from host and commit them to the
+       sparse tree
+       -l  List files monitored by dcp for host or each host in list
+       -r  Any directories will be marked to be recovered recursively
+       -a  All hosts
+       -h  <hosts_list_file> is a file containing list of hosts to
+           monitor this file on
+       <files> specified manually will be suject to a 'git add' and
+              'git commit' if needed. Note that these files may be given
+              an absolute path or a path relative to / on the remote host.
+EOF
+    return 0
+}
+
+edit_git_msg="-e"
+while getopts "lm:ah:r" opt; do
+    case $opt in
+	l ) list=1;;
+	m ) message=$OPTARG; edit_git_msg="";;
+	a ) host_list=$(cd $HOST_STORE; find * -maxdepth 0  -type d);;
+	h ) host_list=$(cat $OPTARG);;
+	r ) recurse=1;;
+	\? ) usage
+            exit 1;;
+	: ) echo "Option -$OPTARG requires an argument." >&2
+	    usage
+	    exit 1;;
+	* ) usage
+            exit 1;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+# There must be a host
+if [[ $# -eq 0 && -z "$host_list" ]]; then
+    echo "No <host> provided"
+    usage
+    exit 1
+fi
+
+list_ () {
+    host=$1
+    shift
+
+    cd ${HOST_STORE}/$host
+
+    (cat files; cat dirs) | sort
+}
+
+track_ () {
+    host=$1
+    shift
+
+#    if ! ping -c1 $host >/dev/null 2>&1 ; then
+#	echo $host not available
+#	return
+#    fi
+
+    cd ${HOST_STORE}/$host
+
+    # Update the list
+    if [[ $recurse == 1 ]]; then
+	list=dirs
+    else
+	list=files
+    fi
+    echo $$list >> $list
+    # Strip leading /, sort and remove dupes
+    cat $list | sed -e s'-^/--' | sort | uniq >$list.sorted
+    rm $list
+    mv $list.sorted $list
+
+    git add $list
+    # Ask for a comment
+    cat <<EOF >> /tmp/dcpmsg$$
+$host : Updated $list list
+EOF
+    echo update commit:
+    git commit -F /tmp/dcpmsg$$ $edit_git_msg
+}
+
+# Which hosts need a pull
+if [[ $list == 1 ]]; then
+    func=list_
+else
+    func=track_
+fi
+if [[ -n $host_list ]]; then
+    for host in $host_list; do
+	$func $host "$@"
+    done
+else
+    $func "$@"
+fi

@@ -1,0 +1,77 @@
+#!/bin/bash
+# Pull from host
+
+. /srv/dcp/bin/dcp2_common
+
+usage()
+{
+    cat <<EOF
+    usage: $1 [-f] (-a | -h <hosts_list> | <host> )
+       Pull package manifest and files tracked by dcp from host
+       -f  Pull even if there are uncommitted changes
+       -a  All hosts
+       -h  <hosts_list> is a file containing list of hosts to push to
+EOF
+    return 0
+}
+
+while getopts "fah:" opt; do
+    case $opt in
+	f ) force=1;;
+	a ) host_list=$(cd $HOST_STORE; find * -maxdepth 0  -type d);;
+	h ) host_list=$(cat $OPTARG);;
+	\? ) usage
+            exit 1;;
+	: ) echo "Option -$OPTARG requires an argument." >&2
+	    usage
+	    exit 1;;
+	* ) usage
+            exit 1;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+# There must be a host
+if [[ $# -eq 0 && -z "$host_list" ]]; then
+    echo "No <host> provided"
+    usage
+    exit 1
+fi
+
+pull_ () {
+    host=$1
+    shift
+
+#    if ! ping -c1 $host >/dev/null 2>&1 ; then
+#	echo $host not available
+#	return
+#    fi
+
+    cd ${HOST_STORE}/$host
+
+    # Check git status
+    if [[ -n "$(git status --porcelain 2>&1)" ]]; then
+	echo Some local changes not comitted for $host
+	if [[ -z "$force" ]]; then
+	    git status --porcelain
+	    echo "Aborting for $host"
+	    return
+	fi
+	echo "Forcing pull as requested"
+    fi
+
+    # Get an updated manifest from the host
+    ssh -x $host dpkg-query -W 2\>/dev/null > manifest
+
+    # Now get the latest files
+    rsync -e 'ssh -x' -a -x --itemize-changes --exclude-from=exclude_patterns  --files-from=files root@$host:/ sparse
+}
+
+# Which hosts need a pull
+if [[ -n $host_list ]]; then
+    for host in $host_list; do
+	pull_ $host "$@"
+    done
+else
+    pull_ "$@"
+fi
