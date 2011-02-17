@@ -58,39 +58,37 @@ commit_ () {
 
     echo "$message" > /tmp/dcpmsg$$
 
-    # If nothing specified then commit everything (including manifest)
-    if [[ $# -eq 0 ]]; then
-	manifest=1
-    fi
-
-    # Add manifest to git
-    if [[ $manifest == 1 ]]; then
+    # Add manifest to git or if nothing specified then commit everything (including manifest)
+    if [[ $manifest == 1 || $# -eq 0 ]]; then
 	git add manifest
 	cat <<EOF >> /tmp/dcpmsg$$
 $host : Installed package manifest updated
 EOF
     fi
 
-    # Add sparse files to git
-    if [[ $# -eq 0 ]]; then
-	git add -a sparse
-	cat <<EOF >> /tmp/dcpmsg$$
+    if [[ $manifest != 1 ]]; then
+	echo "manifest not 1 it's $manifest"
+        # Add sparse files to git
+	if [[ $# -eq 0 ]]; then
+	    git add --all sparse
+	    cat <<EOF >> /tmp/dcpmsg$$
 $host : All files updated from the remote host
 EOF
-    else
-	# dcp2_commit host /etc/fstab /etc/ldap.conf
-	# should do a : git add etc/fstab etc/ldap.conf
-	cd sparse
-	for file in "$@"; do
-            # Only commit existing files
-	    [[ -e $file ]] && files="$files $(echo $file | sed -e s'-^/--')"
-	done
-	git add -a $files
-	cat <<EOF >> /tmp/dcpmsg$$
+	else
+	    # dcp2_commit host /etc/fstab /etc/ldap.conf
+	    # should do a : git add etc/fstab etc/ldap.conf
+	    cd sparse
+	    for file in "$@"; do
+                # Only commit existing files
+		[[ -e $file ]] && files="$files $(echo $file | sed -e s'-^/--')"
+	    done
+	    git add --all $files
+	    cat <<EOF >> /tmp/dcpmsg$$
 $host : Some files updated from the remote host:
 $files
 EOF
-	cd ..
+	    cd ..
+	fi
     fi
     git commit -F /tmp/dcpmsg$$ $edit_git_msg
 }
