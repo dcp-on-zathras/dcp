@@ -1,0 +1,135 @@
+#!/bin/bash
+# Status check
+
+. /srv/dcp/bin/dcp2_common
+
+usage()
+{
+    cat <<EOF
+    usage: $1 [-v] [-q] [-l] [<hosts>]
+       Check status of hosts. Default to all hosts
+       -v  Also show a git diff
+       -q  Silent unless something to report.
+       -l  Show current list of managed files instead of checking status of them
+           (same as dcp_track_files -l)
+EOF
+    return 0
+}
+
+noisy=1
+while getopts "vlq" opt; do
+    case $opt in
+	v ) verbose=1;;
+	q ) noisy="";;
+	l ) list_files=1;;
+	\? ) usage
+            exit 1;;
+	* ) usage
+            exit 1;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+status_ () {
+    host=$1
+
+    activity=""
+
+    # First get all the status info
+    cd ${HOST_STORE}/$host
+    git_status=$(git status --short)
+    if [[ -n "$verbose" ]]; then
+	git_diff=$(git diff)
+    fi
+    if ping -c1 $host >/dev/null 2>&1 ; then
+	# Now get a list of changed files
+	rsync_files= $(rsync -e 'ssh -x' --dry-run -a --no-r -x --itemize-changes --exclude-from=exclude_patterns --files-from=files --delete root@$host:/ sparse/ 2>/tmp/dcp_rsync_err )
+	rsync_files+=$(rsync -e 'ssh -x' --dry-run -a -x --itemize-changes --exclude-from=exclude_patterns --files-from=dirs --delete root@$host:/ sparse/ 2>>/tmp/dcp_rsync_err )
+	rsync_err=$(</tmp/dcp_rsync_err)
+	rm /tmp/dcp_rsync_err
+	# If there is a remote change we :
+	# git stash... pull... diff... reset, restore stash
+	if [[ -n "$verbose" ]]; then
+	    git stash save -q dcp_diff 2>/dev/null
+	    rsync -e 'ssh -x' -a --no-r -x -q --exclude-from=exclude_patterns --files-from=files --delete root@$host:/ sparse/
+	    rsync -e 'ssh -x' -a -x -q --exclude-from=exclude_patterns --files-from=dirs --delete root@$host:/ sparse/
+	    pending_diff=$(git diff)
+	    git reset --hard HEAD >/dev/null
+	    git stash pop -q dcp_diff 2>/dev/null # May fail if there was nothing to stash
+	fi
+	    
+        # Get an updated manifest from the host
+	ssh -x $host dpkg-query -W 2\>/dev/null > manifest.pending
+	manifest_diff=$(diff --unchanged-line-format="" --old-line-format="removed  : %L" --new-line-format="installed: %L" -N manifest manifest.pending)
+	rm -f manifest.pending
+    else
+	rsync_files="(No rsync data: $host unreachable)"
+	rsync_err=""
+	pending_diff=""
+	pending_files="(No rsync data: $host unreachable)"
+    fi
+    metastore_compare=$(metastore --compare)
+
+    if [[ ! -z "$git_status$metastore_compare$rsync_files$pending_files$manifest_diff" ]]; then
+	activity=1
+    fi
+
+    if [[ ! -z "$activity$noisy" ]] ; then
+	echo "################################################################"
+	echo "#### $host"
+	if [[ ! -z "$git_status" ]]; then
+	    echo "Files not in sync with local git :"
+	    echo "$git_status"
+	    echo
+	    if [[ -n "$verbose" ]]; then
+		echo "git diff :"
+		echo "$git_diff"
+		echo
+	    fi
+	fi
+	if [[ ! -z "$metastore_compare" ]]; then
+	    echo "Files with attribute changes compared to local git :"
+	    echo "$metastore_compare"
+	    echo
+	fi
+	if [[ ! -z "$rsync_err" ]]; then
+	    echo "Errors transferring files from remote host :"
+	    echo "$rsync_err"
+	    echo
+	fi
+	if [[ ! -z "$rsync_files" ]]; then
+	    echo "Files not in sync with remote host :"
+	    echo "$rsync_files"
+	    echo
+	    if [[ -n "$verbose" ]]; then
+		echo "Changes in un-pulled files :"
+		echo "$pending_diff"
+		echo
+	    fi
+	fi
+	if [[ ! -z "$manifest_diff" ]]; then
+	    echo "Installed package changes :"
+	    echo "$manifest_diff"
+	    echo
+	fi
+    fi
+    [[ -z "$activity" && ! -z "$noisy" ]] && echo -e "No changes\n"
+}
+
+
+# Which hosts need a status report ?
+if [ $# -eq 0 ]; then
+    hosts=$(cd $HOST_STORE; find * -maxdepth 0  -type d)
+else
+    hosts="$@"
+fi
+
+
+for h in $hosts; do
+    if [[ ! -z "$list_files" ]]; then
+	echo "Files managed for $h :"
+	sed 's@^./@/@' ${HOST_STORE}/${h}.files
+    else
+	status_ $h
+    fi
+done
