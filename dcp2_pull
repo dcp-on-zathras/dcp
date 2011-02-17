@@ -6,9 +6,10 @@
 usage()
 {
     cat <<EOF
-    usage: $1 [-f] (-a | -h <hosts_list> | <host> )
+    usage: $1 [-f] [-v] (-a | -h <hosts_list> | <host> )
        Pull package manifest and files tracked by dcp from host
-       -f  Pull even if there are uncommitted changes
+       -f  Pull even if there are uncommitted changes since the last pull
+       -v  Say which files are being retrieved
        -a  All hosts
        -h  <hosts_list> is a file containing list of hosts to push to
 EOF
@@ -18,6 +19,7 @@ EOF
 while getopts "fah:" opt; do
     case $opt in
 	f ) force=1;;
+	v ) verbose="--itemize-changes";;
 	a ) host_list=$(cd $HOST_STORE; find * -maxdepth 0  -type d);;
 	h ) host_list=$(cat $OPTARG);;
 	\? ) usage
@@ -51,20 +53,23 @@ pull_ () {
 
     # Check git status
     if [[ -n "$(git status --porcelain 2>&1)" ]]; then
-	echo Some local changes not comitted for $host
+	echo Some local changes not comitted for $host from last pull
 	if [[ -z "$force" ]]; then
 	    git status --porcelain
 	    echo "Aborting for $host"
 	    return
 	fi
-	echo "Forcing pull as requested"
+	echo "Forcing a pull anyway, as requested"
     fi
 
     # Get an updated manifest from the host
     ssh -x $host dpkg-query -W 2\>/dev/null > manifest
 
     # Now get the latest files
-    rsync -e 'ssh -x' -a -x --itemize-changes --exclude-from=exclude_patterns  --files-from=files root@$host:/ sparse
+    rsync -e 'ssh -x' -a --no-r -x $verbose --exclude-from=exclude_patterns  --files-from=files --delete root@$host:/ sparse/
+
+    # and the latest dirs
+    rsync -e 'ssh -x' -a -x $verbose --exclude-from=exclude_patterns  --files-from=dirs --delete root@$host:/ sparse/
 }
 
 # Which hosts need a pull
