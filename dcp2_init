@@ -16,6 +16,7 @@ if [ $# -ne 0 ]; then
         exit 1
 fi
 
+mkdir -p ${HOST_STORE}
 
 if [ -e ${SITE_STORE} ]; then
    echo "There is an existing site store"
