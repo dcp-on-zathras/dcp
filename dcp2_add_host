@@ -6,7 +6,7 @@ usage()
 {
     cat <<EOF
 
-    usage: $1 [-p] <host>
+    usage: $1 [-p] <host> [<host>...]
 
        Register a host for dcp
        -p  skip pinging the host, if you know it is up but doesn't allow pings.
@@ -30,28 +30,28 @@ if [ $# -eq 0 ]; then
         exit 1
 fi
 
-host=$1
-
-if [[ ! $skipping ]]; then
-    if ! ping -c1 $host >/dev/null 2>&1 ; then
-	echo No such host : $host
-	exit 1
+for host in $*
+do
+    if [[ ! $skipping ]]; then
+	if ! ping -c1 $host >/dev/null 2>&1 ; then
+	    echo No such host : $host
+	    continue
+	fi
     fi
-fi
 
-if [ -e ${HOST_STORE}/$host ]; then
-   echo "There is an existing store for $host, updating"
-   existing=1
-fi
+    if [ -e ${HOST_STORE}/$host ]; then
+	echo "There is an existing store for $host, updating"
+	existing=1
+    fi
 
-# Create a git repo for the host.
-if [[ -z "$existing" ]]; then
-    git init ${HOST_STORE}/$host
-fi
+    # Create a git repo for the host.
+    if [[ -z "$existing" ]]; then
+	git init ${HOST_STORE}/$host
+    fi
 
-# Set or update the git hook
-cd ${HOST_STORE}/$host
-cat <<'EOF' > .git/hooks/pre-commit
+    # Set or update the git hook
+    cd ${HOST_STORE}/$host
+    cat <<'EOF' > .git/hooks/pre-commit
 set -e
 if [ ! -e .metadata ]; then
     metastore --save
@@ -64,19 +64,22 @@ if [ ! -z "$(metastore --compare)" ]; then
     git add .metadata
 fi
 EOF
-chmod +x .git/hooks/pre-commit
+    chmod +x .git/hooks/pre-commit
 
-if [[ -z "$existing" ]]; then
-    echo '*~' > .gitignore
-    git add .gitignore
-    git commit -m"Initial config for $host" -e
-fi
+    if [[ -z "$existing" ]]; then
+	echo '*~' > .gitignore
+	mkdir sparse
+	touch dirs files exclude_patterns manifest
+	git add .gitignore dirs files exclude_patterns manifest
+	git commit -m"Initial config for $host with empty manifest/dir/file/exclude"
+    fi
 
-# Now update the site repo which has all the hosts as submodules
-# This isn't used yet.
-cd ${SITE_STORE}
-# We'll link to the nearby repo in ../$host
-if [[ -z "$existing" ]]; then
-    git submodule add ${HOST_STORE}/$host $host
-    git commit -m "added host $host"
-fi
+    # Now update the site repo which has all the hosts as submodules
+    # This isn't used yet.
+    cd ${SITE_STORE}
+    # We'll link to the nearby repo in ../$host
+    if [[ -z "$existing" ]]; then
+	git submodule add ${HOST_STORE}/$host $host
+	git commit -m "added host $host"
+    fi
+done
