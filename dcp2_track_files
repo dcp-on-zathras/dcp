@@ -67,13 +67,18 @@ track_ () {
 
     cd ${HOST_STORE}/$host
 
-    # Update the list
+    # Which list to update?
     if [[ $recurse == 1 ]]; then
 	list=dirs
     else
 	list=files
     fi
-    echo $$list >> $list
+
+    # Update the list
+    for target in "$@"; do
+	echo $target >> $list
+    done
+
     # Strip leading /, sort and remove dupes
     cat $list | sed -e s'-^/--' | sort | uniq >$list.sorted
     rm $list
