@@ -8,9 +8,9 @@ usage()
     cat <<EOF
     usage: $1 [-m <message>] [-f] (-h <hosts_list> | <host> ) [<files>]
        Commit files in the sparse tree to the store
-       -i  Commit the "installed package" manifest
+       -i  Commit the "installed package" manifest (only needed if
+           specific files listed otherwise it's committed anyway)
        -m  A message to apply to every commit message
-       -f  Pull even if there are uncommitted changes
        -a  All hosts
        -h  <hosts_list> is a file containing list of hosts to push to
        <files> specified manually will be suject to a 'git add' and
@@ -24,11 +24,8 @@ edit_git_msg="-e"
 while getopts "arpim:fh:" opt; do
     case $opt in
 	a ) host_list=$(cd $HOST_STORE; find * -maxdepth 0  -type d);;
-	r ) refresh=1;;
-	p ) pending=1;;
 	i ) manifest=1;;
 	m ) message=$OPTARG; edit_git_msg="";;
-	f ) force=1;;
 	h ) host_list=$(cat $OPTARG);;
 	\? ) usage
             exit 1;;
@@ -48,7 +45,7 @@ if [[ $# -eq 0 && -z "$host_list" ]]; then
     exit 1
 fi
 
-pull_ () {
+commit_ () {
     host=$1
     shift
 
@@ -59,56 +56,50 @@ pull_ () {
 
     cd ${HOST_STORE}/$host
 
-    # Check git status
-    if [[ -n "$(git status --porcelain 2>&1)" ]]; then
-	echo Some local changes not comitted for $host
-	if [[ -z "$force" ]]; then
-	    git status --porcelain
-	    echo "Aborting for $host"
-	    return
-	fi
-	echo "Forcing pull as requested"
-    fi
-
     echo "$message" > /tmp/dcpmsg$$
 
-    # zero the filelist
-    > ../${host}.files
-    # Now do one or more of: refresh; pull pending; pull specified files
-    [[ -n "$refresh" ]] && find . -name .git -prune -o \( \! -name .metadata \! -name .gitignore \! -name . \) \( -type f -o -type l -o -type d \) -print > ../${host}.files
+    # If nothing specified then commit everything (including manifest)
+    if [[ $# -eq 0 ]]; then
+	manifest=1
+    fi
 
-    [[ -n "$pending" ]] && ssh -x $host cat /var/dcp/register 2\>/dev/null \; rm -f /var/dcp/register  >> ../${host}.files
-
-    # Get an updated manifest from the host
-    [[ -n "$manifest" ]] && ssh -x $host dpkg-query -W 2\>/dev/null > .manifest
-
-    if [[ $# -gt 0 ]]; then
-	for f in "${@#/}"; do  # ${PARAM#/} removes prefix of '/' to make paths relative	    
-	    [[ -f $f ]] && git add $f
-	    echo $f >> ../${host}.files
-	done
+    # Add manifest to git
+    if [[ $manifest == 1 ]]; then
+	git add manifest
 	cat <<EOF >> /tmp/dcpmsg$$
-$host : Manually added files from command line
-$*
+$host : Installed package manifest updated
 EOF
     fi
-    # Now get the latest version
-    rsync -e 'ssh -x' -a -x --itemize-changes --exclude ./  --files-from=../${host}.files root@$host:/ .
-    # Add everything to git
-    git add .
-    # Ask for a comment
-    cat <<EOF >> /tmp/dcpmsg$$
-$host : Files updated and pulled from the remote host
+
+    # Add sparse files to git
+    if [[ $# -eq 0 ]]; then
+	git add -a sparse
+	cat <<EOF >> /tmp/dcpmsg$$
+$host : All files updated from the remote host
 EOF
-    echo update commit:
+    else
+	# dcp2_commit host /etc/fstab /etc/ldap.conf
+	# should do a : git add etc/fstab etc/ldap.conf
+	cd sparse
+	for file in "$@"; do
+            # Only commit existing files
+	    [[ -e $file ]] && files="$files $(echo $file | sed -e s'-^/--')"
+	done
+	git add -a $files
+	cat <<EOF >> /tmp/dcpmsg$$
+$host : Some files updated from the remote host:
+$files
+EOF
+	cd ..
+    fi
     git commit -F /tmp/dcpmsg$$ $edit_git_msg
 }
 
-# Which hosts need a pull
+# Which hosts get a commit
 if [[ -n $host_list ]]; then
     for host in $host_list; do
-	pull_ $host "$@"
+	commit_ $host "$@"
     done
 else
-    pull_ "$@"
+    commit_ "$@"
 fi
