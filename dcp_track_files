@@ -86,7 +86,7 @@ track_ () {
 
     git add $list
     # Ask for a comment
-    cat <<EOF >> /tmp/dcpmsg$$
+    cat <<EOF > /tmp/dcpmsg$$
 $host : Updated $list list
 EOF
     echo update commit:
