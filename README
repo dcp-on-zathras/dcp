@@ -33,7 +33,7 @@ dcp_commit -a -m"Initial pull of remote files"
 
 
 Change a file on a host then :
-  dcp_status -a
+  dcp_status
 will show what's changed.
 
 Then:
