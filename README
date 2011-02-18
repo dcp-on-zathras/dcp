@@ -1,66 +1,55 @@
-dcp is a distributed config pushing tool
+dcp2 is a distributed config pushing tool
 
 The intention is to have an admin host which holds a collection of
 sparse directory for a variety of machines.
 
 These are kept under version control and can be:
-* pushed to the host
 * compared to the host
 * aligned with peers
 
-Support two operational models:
+Support a simple operational model:
 * change the host and record later
-* stage on the server and push
-
-Need to:
-  consider user that runs dcp has to have ssh root equivalence for rsync
-  --fake-super ... but this makes changing ownership etc hard.
 
 Using sudoers:
   Defaults env_keep+="GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL"
 to pass-through environment for git logs.
 
-* dcp_init
+* dcp2_init
 
   This command is run once to create a site area that holds each host
   as a git submodule. This isn't used yet.
 
-* dcp_add_host
+
+* dcp2_add_host
 
   This is used to create a git repository for a host. It also updates
   a host repository to use the latest hooks (eg to manage metadata).
 
-  ?? Should this take a set of files to initialise (avoids the empty repo issue)
-  ?? Should it update all hosts if used w/o a hostname
+* dcp2_track
 
-* dcp_pull_files
+  Adds files or directories to the list of files to rsync but does no
+  data transfer. Used to add new areas beyond the base /etc/ tree and
+  to filter out unwanted files.
+  Currently supports:
+  * specific files
+  * files ending in / are pulled recursively
+  * exclusion file
+
+  (needs to allow exclude editing)
+  Forces a commit of the new filelist/dirlist/excludefile
+
+* dcp2_pull
 
   The primary tool to update a repo from the remote host(s).
+  Pull files tracked by dcp from host to the sparse tree.
+  Doesn't do any commits.
 
-  usage: dcp_pull_files [-r] [-p] [-f] (-h <hosts_list> | <host> ) [<files>]
-     Pull files tracked by dcp from host and commit them to the sparse tree
-     -r  refresh files from host to repository
-     -p  pull (and add) any pending files mentioned on the host
-         in the /var/dcp/register file
-     -f  Pull even if there are uncommitted changes which may be overwritten
-     -h  <hosts_list> is a file containing list of hosts to push to
-     <files> specified manually will be suject to a 'git add' and
-             'git commit' if needed
+* dcp2_commit
 
-  ?? Should this be renamed to dcp_update_repo
+  By default commits manifest, all outstanding changed files and new files
+  Can commit just certain files or manifest etc
 
-* dcp_push_files
-
-  If files are updated on the repo then this command sends the repository files to the host(s)
-
-  usage: dcp_push_files [-f] [-a] [-n] (-h <hosts_list> | <host>) [<files>]
-    Push files tracked by dcp to host
-    -a  Push all files in the tree (not default)
-    -f  Push even if there are uncommitted changes
-    -n  dry-run
-    -h  file containing list of hosts to push to
-
-* dcp_status
+* dcp2_status
 
   Reports the git status for uncommitted local changes, metadata
   status for changes to file ownership, permissions etc and any files
@@ -68,9 +57,16 @@ to pass-through environment for git logs.
 
   Can also show what files on the remote system are tracked.
 
-    usage: dcp_status [-v] [-l] [<hosts>]
-       Check status of hosts. Default to all hosts
-       -v  Also show a git diff
-       -l  Show current list of managed files instead of checking status of them
-       -q 
+
+
+store format:
+
+${host}/
+  files		     list of specific files pulled by rsync xfer
+  dirs       	     list of dirs pulled recursively by rsync xfer
+  exclude_patterns   list of exclusions applied to all rsync xfers
+  metastore  	     holds file metadata (for now)
+  sparse/    	     rsync'ed copy of remote tree
+
+
 
