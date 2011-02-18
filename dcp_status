@@ -60,7 +60,7 @@ status_ () {
 	fi
 	    
         # Get an updated manifest from the host
-	ssh -x $host dpkg-query -W 2\>/dev/null > manifest.pending
+	get_manifest_ > manifest.pending
 	manifest_diff=$(diff --unchanged-line-format="" --old-line-format="removed  : %L" --new-line-format="installed: %L" -N manifest manifest.pending)
 	rm -f manifest.pending
     else

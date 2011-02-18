@@ -24,3 +24,7 @@ rsync_dirs_ () {
     # $@ is usually none or more of --itemize-changes -q --dry-run
     rsync -e 'ssh -x' "$@" -a -x --exclude-from=exclude_patterns  --files-from=dirs --delete root@$host:/ sparse/
 }
+
+get_manifest_ () {
+    ssh -x $host 'bash -c "if [ -f /etc/SuSE-release ]; then rpm -qa; else dpkg-query -W; fi | sort "'
+}

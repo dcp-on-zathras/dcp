@@ -63,7 +63,7 @@ pull_ () {
     fi
 
     # Get an updated manifest from the host
-    ssh -x $host dpkg-query -W 2\>/dev/null > manifest
+    get_manifest_ > manifest
 
     # Now get the latest files
     rsync_files_ $verbose
