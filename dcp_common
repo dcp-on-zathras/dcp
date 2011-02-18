@@ -9,8 +9,9 @@ EOF
    exit 1
 fi
 
-HOST_STORE=/srv/dcp/store2/hosts/
-SITE_STORE=/srv/dcp/store2/site/
+# Defaults
+HOST_STORE=/srv/dcp/store/hosts/
+SITE_STORE=/srv/dcp/store/site/
 
 [ -f /etc/dcp.conf ] && . /etc/dcp.conf
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. /srv/dcp/bin/dcp2_common
+. /srv/dcp/bin/dcp_common
 
 usage()
 {
