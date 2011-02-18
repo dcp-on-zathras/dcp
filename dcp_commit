@@ -67,7 +67,6 @@ EOF
     fi
 
     if [[ $manifest != 1 ]]; then
-	echo "manifest not 1 it's $manifest"
         # Add sparse files to git
 	if [[ $# -eq 0 ]]; then
 	    git add --all sparse
