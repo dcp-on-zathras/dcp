@@ -43,16 +43,17 @@ status_ () {
     fi
     if ping -c1 $host >/dev/null 2>&1 ; then
 	# Now get a list of changed files
-	rsync_files= $(rsync -e 'ssh -x' --dry-run -a --no-r -x --itemize-changes --exclude-from=exclude_patterns --files-from=files --delete root@$host:/ sparse/ 2>/tmp/dcp_rsync_err )
-	rsync_files+=$(rsync -e 'ssh -x' --dry-run -a -x --itemize-changes --exclude-from=exclude_patterns --files-from=dirs --delete root@$host:/ sparse/ 2>>/tmp/dcp_rsync_err )
+	rsync_files= $(rsync_files_ --dry-run --itemize-changes 2>/tmp/dcp_rsync_err )
+	rsync_files+=$(rsync_dirs_  --dry-run --itemize-changes 2>>/tmp/dcp_rsync_err )
 	rsync_err=$(</tmp/dcp_rsync_err)
 	rm /tmp/dcp_rsync_err
 	# If there is a remote change we :
 	# git stash... pull... diff... reset, restore stash
 	if [[ -n "$verbose" ]]; then
 	    git stash save -q dcp_diff 2>/dev/null
-	    rsync -e 'ssh -x' -a --no-r -x -q --exclude-from=exclude_patterns --files-from=files --delete root@$host:/ sparse/
-	    rsync -e 'ssh -x' -a -x -q --exclude-from=exclude_patterns --files-from=dirs --delete root@$host:/ sparse/
+	    rsync_files_ -q
+	    rsync_dirs_  -q
+
 	    pending_diff=$(git diff)
 	    git reset --hard HEAD >/dev/null
 	    git stash pop -q dcp_diff 2>/dev/null # May fail if there was nothing to stash

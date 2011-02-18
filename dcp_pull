@@ -66,10 +66,10 @@ pull_ () {
     ssh -x $host dpkg-query -W 2\>/dev/null > manifest
 
     # Now get the latest files
-    rsync -e 'ssh -x' -a --no-r -x $verbose --exclude-from=exclude_patterns  --files-from=files --delete root@$host:/ sparse/
+    rsync_files_ $verbose
 
     # and the latest dirs
-    rsync -e 'ssh -x' -a -x $verbose --exclude-from=exclude_patterns  --files-from=dirs --delete root@$host:/ sparse/
+    rsync_dirs_ $verbose
 }
 
 # Which hosts need a pull
