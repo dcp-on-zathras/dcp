@@ -6,7 +6,7 @@
 usage()
 {
     cat <<EOF
-    usage: $1 [-l] [-m <message>]  (-a | -h <hosts_list_file> | <host> ) [<files> <dirs>]
+    usage: $1 [-l] [-r] [-m <message>]  (-a | -h <hosts_list_file> | <host> ) [<files> <dirs>]
        Track files monitored by dcp from host and commit them to the
        sparse tree
        -l  List files monitored by dcp for host or each host in list
@@ -22,13 +22,13 @@ EOF
 }
 
 edit_git_msg="-e"
-while getopts "lm:ah:r" opt; do
+while getopts "lrm:ah:" opt; do
     case $opt in
 	l ) list=1;;
+	r ) recurse=1;;
 	m ) message=$OPTARG; edit_git_msg="";;
 	a ) host_list=$(cd $HOST_STORE; find * -maxdepth 0  -type d);;
 	h ) host_list=$(cat $OPTARG);;
-	r ) recurse=1;;
 	\? ) usage
             exit 1;;
 	: ) echo "Option -$OPTARG requires an argument." >&2

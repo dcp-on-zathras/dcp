@@ -17,7 +17,7 @@ EOF
 }
 
 noisy=1
-while getopts "vlq" opt; do
+while getopts "vql" opt; do
     case $opt in
 	v ) verbose=1;;
 	q ) noisy="";;

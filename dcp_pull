@@ -16,7 +16,7 @@ EOF
     return 0
 }
 
-while getopts "fah:" opt; do
+while getopts "fvah:" opt; do
     case $opt in
 	f ) force=1;;
 	v ) verbose="--itemize-changes";;

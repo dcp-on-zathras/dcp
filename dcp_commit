@@ -6,7 +6,7 @@
 usage()
 {
     cat <<EOF
-    usage: $1 [-m <message>] [-f] (-h <hosts_list> | <host> ) [<files>]
+    usage: $1 -i [-m <message>] (-a | -h <hosts_list> | <host> ) [<files>]
        Commit files in the sparse tree to the store
        -i  Commit the "installed package" manifest (only needed if
            specific files listed otherwise it's committed anyway)
@@ -21,11 +21,11 @@ EOF
 }
 
 edit_git_msg="-e"
-while getopts "arpim:fh:" opt; do
+while getopts "im:ah:" opt; do
     case $opt in
-	a ) host_list=$(cd $HOST_STORE; find * -maxdepth 0  -type d);;
 	i ) manifest=1;;
 	m ) message=$OPTARG; edit_git_msg="";;
+	a ) host_list=$(cd $HOST_STORE; find * -maxdepth 0  -type d);;
 	h ) host_list=$(cat $OPTARG);;
 	\? ) usage
             exit 1;;
