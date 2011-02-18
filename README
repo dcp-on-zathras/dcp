@@ -1,4 +1,4 @@
-dcp2 is a distributed config pushing tool
+dcp is a distributed config pushing tool
 
 The intention is to have an admin host which holds a collection of
 sparse directory for a variety of machines.

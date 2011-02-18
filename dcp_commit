@@ -74,7 +74,7 @@ EOF
 $host : All files updated from the remote host
 EOF
 	else
-	    # dcp2_commit host /etc/fstab /etc/ldap.conf
+	    # dcp_commit host /etc/fstab /etc/ldap.conf
 	    # should do a : git add etc/fstab etc/ldap.conf
 	    cd sparse
 	    for file in "$@"; do
