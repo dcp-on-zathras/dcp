@@ -17,8 +17,14 @@ if [ $# -ne 0 ]; then
 fi
 
 mkdir -p ${HOST_STORE}
+chown root:root ${HOST_STORE}
+chmod 700 ${HOST_STORE}
 
-if [ -e ${SITE_STORE} ]; then
+mkdir -p ${SITE_STORE}
+chown root:root ${SITE_STORE}
+chmod 700 ${SITE_STORE}
+
+if [ -e ${SITE_STORE}/.git ]; then
    echo "There is an existing site store"
    exit 1
 fi
