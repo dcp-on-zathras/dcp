@@ -69,7 +69,7 @@ status_ () {
 	pending_diff=""
 	pending_files="(No rsync data: $host unreachable)"
     fi
-    metastore_compare=$(metastore --compare)
+    metastore_compare=$(metastore --compare 2>/dev/null)
 
     if [[ ! -z "$git_status$metastore_compare$rsync_files$pending_files$manifest_diff" ]]; then
 	activity=1

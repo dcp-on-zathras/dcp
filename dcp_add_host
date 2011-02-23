@@ -54,13 +54,13 @@ do
     cat <<'EOF' > .git/hooks/pre-commit
 set -e
 if [ ! -e .metadata ]; then
-    metastore --save
+    metastore --save 2>/dev/null
     git add .metadata
 fi
 # metastore doesn't produce the same output file for the same metadata
 # everytime, so avoid changing the file if nothing really changed.
 if [ ! -z "$(metastore --compare)" ]; then
-    metastore --save
+    metastore --save 2>/dev/null
     git add .metadata
 fi
 EOF
