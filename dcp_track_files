@@ -55,8 +55,12 @@ list_ () {
     shift
 
     cd ${HOST_STORE}/$host
-
+    
+    echo Tracking:
     (cat files; cat dirs) | sort
+
+    echo Excluding:
+    cat exclude_patterns
 }
 
 track_ () {
