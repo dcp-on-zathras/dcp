@@ -7,10 +7,12 @@ usage()
 {
     cat <<EOF
     usage: $1 [-l] [-r] [-m <message>]  (-a | -h <hosts_list_file> | <host> ) [<files> <dirs>]
+           $1 -e [-m <message>]  (-a | -h <hosts_list_file> | <host> ) <exclude_patterns>
        Track files monitored by dcp from host and commit them to the
        sparse tree
        -l  List files monitored by dcp for host or each host in list
        -r  Any directories will be marked to be recovered recursively
+       -e  Add entries to the rsync exclusion list
        -a  All hosts
        -h  <hosts_list_file> is a file containing list of hosts to
            monitor this file on
@@ -22,10 +24,11 @@ EOF
 }
 
 edit_git_msg="-e"
-while getopts "lrm:ah:" opt; do
+while getopts "lrem:ah:" opt; do
     case $opt in
 	l ) list=1;;
 	r ) recurse=1;;
+	e ) exclude=1;;
 	m ) message=$OPTARG; edit_git_msg="";;
 	a ) host_list=$(cd $HOST_STORE; find * -maxdepth 0  -type d);;
 	h ) host_list=$(cat $OPTARG);;
@@ -68,26 +71,28 @@ track_ () {
     cd ${HOST_STORE}/$host
 
     # Which list to update?
-    if [[ $recurse == 1 ]]; then
-	list=dirs
-    else
-	list=files
-    fi
+    list_f="files"
+    if [[ $recurse == 1 ]]; then list_f="dirs"; fi
+    if [[ $exclude == 1 ]]; then list_f="exclude_patterns"; fi
 
-    # Update the list
+    # Update the list_f
     for target in "$@"; do
-	echo $target >> $list
+	echo $target >> $list_f
     done
 
     # Strip leading /, sort and remove dupes
-    cat $list | sed -e s'-^/--' | sort | uniq >$list.sorted
-    rm $list
-    mv $list.sorted $list
+    if [[ $exclude == 1 ]]; then
+	cat $list_f | sort | uniq >$list_f.sorted
+    else
+	cat $list_f | sed -e s'-^/--' | sort | uniq >$list_f.sorted
+    fi
+    rm $list_f
+    mv $list_f.sorted $list_f
 
-    git add $list
+    git add $list_f
     # Ask for a comment
     cat <<EOF > /tmp/dcpmsg$$
-$host : Updated $list list
+$host : Updated $list_f list
 EOF
     echo update commit:
     git commit -F /tmp/dcpmsg$$ $edit_git_msg
