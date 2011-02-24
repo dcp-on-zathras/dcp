@@ -17,12 +17,12 @@ SITE_STORE=/srv/dcp/store/site/
 
 rsync_files_ () {
     # $@ is usually none or more of --itemize-changes -q --dry-run
-    rsync -e 'ssh -x' "$@" -a --no-r -x --numeric-ids --exclude-from=exclude_patterns --files-from=files --delete root@$host:/ sparse/
+    rsync -e 'ssh -x' "$@" -a --no-r -x --numeric-ids --exclude-from=exclude_patterns --exclude='.git' --files-from=files --delete root@$host:/ sparse/
 }
 
 rsync_dirs_ () {
     # $@ is usually none or more of --itemize-changes -q --dry-run
-    rsync -e 'ssh -x' "$@" -a -r -x --numeric-ids --exclude-from=exclude_patterns  --files-from=dirs --delete root@$host:/ sparse/
+    rsync -e 'ssh -x' "$@" -a -r -x --numeric-ids --exclude-from=exclude_patterns --exclude='.git' --files-from=dirs --delete root@$host:/ sparse/
 }
 
 get_manifest_ () {
