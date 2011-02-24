@@ -20,7 +20,7 @@ while getopts "fvah:" opt; do
     case $opt in
 	f ) force=1;;
 	v ) verbose="--itemize-changes";;
-	a ) host_list=$(cd $HOST_STORE; find * -maxdepth 0  -type d);;
+	a ) host_list=$(all_hosts_);;
 	h ) host_list=$(cat $OPTARG);;
 	\? ) usage
             exit 1;;

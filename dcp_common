@@ -28,3 +28,8 @@ rsync_dirs_ () {
 get_manifest_ () {
     ssh -x $host 'bash -c "if [ -f /etc/SuSE-release ]; then rpm -qa; else dpkg-query -W; fi | sort "'
 }
+
+all_hosts_ () {
+    cd $HOST_STORE
+    find * -maxdepth 0  -type d
+}

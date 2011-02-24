@@ -25,7 +25,7 @@ while getopts "im:ah:" opt; do
     case $opt in
 	i ) manifest=1;;
 	m ) message=$OPTARG; edit_git_msg="";;
-	a ) host_list=$(cd $HOST_STORE; find * -maxdepth 0  -type d);;
+	a ) host_list=$(all_hosts_);;
 	h ) host_list=$(cat $OPTARG);;
 	\? ) usage
             exit 1;;
