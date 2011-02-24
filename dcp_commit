@@ -54,7 +54,10 @@ commit_ () {
 #	return
 #    fi
 
-    cd ${HOST_STORE}/$host
+    cd ${HOST_STORE}/$host || {
+	echo "No such host : $host .... should you run dcp_add_host"
+	return
+    }
 
     echo "$message" > /tmp/dcpmsg$$
 
