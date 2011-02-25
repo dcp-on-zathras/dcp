@@ -48,7 +48,7 @@ status_ () {
 	rsync_files= $(rsync_files_ --dry-run --itemize-changes 2>/tmp/dcp_rsync_err )
 	rsync_files+=$(rsync_dirs_  --dry-run --itemize-changes 2>>/tmp/dcp_rsync_err )
 	rsync_err=$(</tmp/dcp_rsync_err)
-	rm /tmp/dcp_rsync_err
+	rm -f /tmp/dcp_rsync_err
 	# If there is a remote change we :
 	# git stash... pull... diff... reset, restore stash
 	if [[ -n "$verbose" ]]; then
