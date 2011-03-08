@@ -59,11 +59,18 @@ list_ () {
 	return
 	}
     
-    echo Tracking:
-    (cat files; cat dirs) | sort
-
-    echo Excluding:
-    cat exclude_patterns
+    [ -s dirs ] && {
+	echo Tracking recursively:
+	sort dirs
+    }
+    [ -s files ] && {
+	echo Tracking files:
+	sort files
+    }
+    [ -s exclude_patterns ] && {
+	echo Excluding:
+	cat exclude_patterns
+	}
 }
 
 track_ () {
