@@ -45,7 +45,7 @@ status_ () {
     fi
     if ping -c1 $host >/dev/null 2>&1 ; then
 	# Now get a list of changed files
-	rsync_files= $(rsync_files_ --dry-run --itemize-changes 2>/tmp/dcp_rsync_err )
+	rsync_files=$(rsync_files_ --dry-run --itemize-changes 2>/tmp/dcp_rsync_err )
 	rsync_files+=$(rsync_dirs_  --dry-run --itemize-changes 2>>/tmp/dcp_rsync_err )
 	rsync_err=$(</tmp/dcp_rsync_err)
 	rm -f /tmp/dcp_rsync_err
