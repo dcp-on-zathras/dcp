@@ -57,7 +57,7 @@ list_ () {
     cd ${HOST_STORE}/$host || {
 	echo "unknown host $host - maybe you should dcp_add_host"
 	return
-	}}
+	}
     
     echo Tracking:
     (cat files; cat dirs) | sort
