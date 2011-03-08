@@ -120,6 +120,7 @@ else
 fi
 if [[ -n $host_list ]]; then
     for host in $host_list; do
+	echo $host :
 	$func $host "$@"
     done
 else
