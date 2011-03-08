@@ -49,7 +49,10 @@ pull_ () {
 #	return
 #    fi
 
-    cd ${HOST_STORE}/$host
+    cd ${HOST_STORE}/$host || {
+	echo "No such host : $host .... should you run dcp_add_host"
+	return
+    }
 
     # Check git status
     if [[ -n "$(git status --porcelain 2>&1)" ]]; then
