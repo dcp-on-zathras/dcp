@@ -1,0 +1,52 @@
+#!/bin/bash
+# History
+
+. /srv/dcp/bin/dcp_common
+
+usage()
+{
+    cat <<EOF
+    usage: $1 [-f] [-a | <hosts>]
+       Changelog of hosts. Default to all hosts
+       [-f]  pass --name-only to git log (list files)
+EOF
+    return 0
+}
+
+while getopts ":af" opt; do
+    case $opt in
+	a ) host_list=$(all_hosts_);;
+	f ) g_opts="$g_opts --name-only";;
+	\? ) usage
+            exit 1;;
+	* ) usage
+            exit 1;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+log_ () {
+    host=$1
+
+    cd ${HOST_STORE}/$host
+    echo "$host"
+    echo "git log :"
+    git log $g_opts
+    echo
+}
+
+# Which hosts need a log ?
+if [[ $# -eq 0 ]]; then
+    if [[ $host_list == "" ]]; then
+	echo "No '-a' or hosts specified ($host_list)"
+	usage
+	exit 1
+    fi
+else
+    host_list="$@"
+fi
+
+for h in $host_list; do
+    echo Log for $h
+    log_ $h
+done
