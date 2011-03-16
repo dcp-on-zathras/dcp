@@ -6,17 +6,21 @@
 usage()
 {
     cat <<EOF
-    usage: $1 [-f] [-a | <hosts>]
+    usage: $1 [-f] [-s <date>] [-a | <hosts>]
        Changelog of hosts. Default to all hosts
        [-f]  pass --name-only to git log (list files)
+       [-s]  since <date> : note uses git's flexible format so
+             -s "yesterday" or 
+             -s "2 days ago"
 EOF
     return 0
 }
 
-while getopts ":af" opt; do
+while getopts "fs::a" opt; do
     case $opt in
-	a ) host_list=$(all_hosts_);;
 	f ) g_opts="$g_opts --name-only";;
+	s ) g_opts="$g_opts --since=\"$OPTARG\"";;
+	a ) host_list=$(all_hosts_);;
 	\? ) usage
             exit 1;;
 	* ) usage
@@ -29,10 +33,14 @@ log_ () {
     host=$1
 
     cd ${HOST_STORE}/$host
-    echo "$host"
-    echo "git log :"
-    git log $g_opts
-    echo
+    tmp_log=$(mktemp)
+    git log $g_opts > $tmp_log
+    if [ -s $tmp_log ] ; then
+	echo Log for $host
+	cat $tmp_log
+	echo
+    fi
+    rm -f $tmp_log
 }
 
 # Which hosts need a log ?
@@ -47,6 +55,5 @@ else
 fi
 
 for h in $host_list; do
-    echo Log for $h
     log_ $h
 done
