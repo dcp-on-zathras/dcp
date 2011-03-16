@@ -34,7 +34,8 @@ log_ () {
 
     cd ${HOST_STORE}/$host
     tmp_log=$(mktemp)
-    git log $g_opts > $tmp_log
+    # Use eval since variable expansion needs re-parsing
+    eval git log $g_opts > $tmp_log
     if [ -s $tmp_log ] ; then
 	echo Log for $host
 	cat $tmp_log
