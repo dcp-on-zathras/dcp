@@ -37,20 +37,30 @@ EOF
 Clean up if needed:
 rm -rf /srv/dcp/store/
 
-run:
+First setup (or update) your repository by running:
+
 dcp_init
-dcp_add_host cocoa egroup
-dcp_track_files -a -r -m"Monitor /etc" /etc/
-dcp_pull -a
-dcp_commit -a -m"Initial pull of remote files"
+
+Now you want to add one or more hosts to dcp, so simply run:
+
+dcp_add_host cocoa cocoa1 cocoa2 cocoa3
+
+Usually you will want to start tracking a whole config dir in host cocoa
+
+dcp_track_files  -r -m"Monitor /etc" cocoa /etc/
+
+Now you want to start dcp watching the real files
+
+dcp_pull cocoa
+dcp_commit -m "Initial pull of remote files" cocoa
 
 
-Change a file on a host then :
-  dcp_status
+Now when you change a file on a host then :
+  dcp_status cocoa
 will show what's changed.
 
 Then:
-  dcp_pull -a
+  dcp_pull cocoa
 will bring all the changes to the store
 
 When this is done execute :
@@ -66,6 +76,8 @@ If you only want to commit package installation changes :
 
 
 DOCUMENTATION
+
+Up-to-date documentation is obtained from using --help on any command.
 
 * dcp_init
 
