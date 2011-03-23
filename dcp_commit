@@ -6,10 +6,11 @@
 usage()
 {
     cat <<EOF
-    usage: $1 -i [-m <message>] (-a | -h <hosts_list> | <host> ) [<files>]
+    usage: $1 [-i] [-p] [-m <message>] (-a | -h <hosts_list> | <host> ) [<files>]
        Commit files in the sparse tree to the store
        -i  Commit the "installed package" manifest (only needed if
            specific files listed otherwise it's committed anyway)
+       -p  Do a simple dcp_pull before the commit
        -m  A message to apply to every commit message
        -a  All hosts
        -h  <hosts_list> is a file containing list of hosts to push to
@@ -21,9 +22,10 @@ EOF
 }
 
 edit_git_msg="-e"
-while getopts "im:ah:" opt; do
+while getopts "ipm:ah:" opt; do
     case $opt in
 	i ) manifest=1;;
+        p ) pull=1;;
 	m ) message=$OPTARG; edit_git_msg="";;
 	a ) host_list=$(all_hosts_);;
 	h ) host_list=$(cat $OPTARG);;
@@ -98,8 +100,10 @@ EOF
 # Which hosts get a commit
 if [[ -n $host_list ]]; then
     for host in $host_list; do
+        [[ -n $pull ]] && dcp_pull $host
 	commit_ $host "$@"
     done
 else
+    [[ -n $pull ]] && dcp_pull $1
     commit_ "$@"
 fi
