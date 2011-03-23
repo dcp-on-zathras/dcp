@@ -7,19 +7,22 @@ usage()
 {
     cat <<EOF
     usage: $1 [-f] [-s <date>] [-a | <hosts>]
+    or:    $1 [-c <commit>] <host>
        Changelog of hosts. Default to all hosts
        [-f]  pass --name-only to git log (list files)
        [-s]  since <date> : note uses git's flexible format so
              -s "yesterday" or 
              -s "2 days ago"
+       [-c]  show the details of a particular commit
 EOF
     return 0
 }
 
-while getopts "fs::a" opt; do
+while getopts "fs:c:a" opt; do
     case $opt in
 	f ) g_opts="$g_opts --name-only";;
 	s ) g_opts="$g_opts --since=\"$OPTARG\"";;
+	c ) commit=$OPTARG;;
 	a ) host_list=$(all_hosts_);;
 	\? ) usage
             exit 1;;
@@ -28,6 +31,15 @@ while getopts "fs::a" opt; do
     esac
 done
 shift $(($OPTIND - 1))
+
+show_commit_ () {
+    host=$1
+
+    cd ${HOST_STORE}/$host
+
+    git show --pretty $commit
+
+}
 
 log_ () {
     host=$1
@@ -56,5 +68,9 @@ else
 fi
 
 for h in $host_list; do
-    log_ $h
+    if [[ -n $commit ]]; then
+	show_commit_ $h
+    else
+	log_ $h
+    fi
 done
