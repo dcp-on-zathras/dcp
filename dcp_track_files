@@ -82,7 +82,10 @@ track_ () {
 #	return
 #    fi
 
-    cd ${HOST_STORE}/$host
+    cd ${HOST_STORE}/$host || {
+	echo "unknown host $host - maybe you should dcp_add_host"
+	return
+	}
 
     # Which list to update?
     list_f="files"
