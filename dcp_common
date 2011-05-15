@@ -12,6 +12,7 @@ fi
 # Defaults
 HOST_STORE=/srv/dcp/store/hosts/
 SITE_STORE=/srv/dcp/store/site/
+MSG_REWRITES=() #optional sed arguments to do rewrites in commits' log messages
 
 [ -f /etc/dcp.conf ] && . /etc/dcp.conf
 
