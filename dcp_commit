@@ -61,12 +61,13 @@ commit_ () {
 	return
     }
 
-    echo "$message" > /tmp/dcpmsg$$
+    msgfile=$(mktemp)
+    echo "$message" > ${msgfile}
 
     # Add manifest to git or if nothing specified then commit everything (including manifest)
     if [[ $manifest == 1 || $# -eq 0 ]]; then
 	git add manifest
-	cat <<EOF >> /tmp/dcpmsg$$
+	cat <<EOF >> ${msgfile}
 $host : Installed package manifest updated
 EOF
     fi
@@ -75,7 +76,7 @@ EOF
         # Add sparse files to git
 	if [[ $# -eq 0 ]]; then
 	    git add --all sparse
-	    cat <<EOF >> /tmp/dcpmsg$$
+	    cat <<EOF >> ${msgfile}
 $host : All files updated from the remote host
 EOF
 	else
@@ -87,14 +88,17 @@ EOF
 		[[ -e $file ]] && files="$files $(echo $file | sed -e s'-^/--')"
 	    done
 	    git add --all $files
-	    cat <<EOF >> /tmp/dcpmsg$$
+	    cat <<EOF >> ${msgfile}
 $host : Some files updated from the remote host:
 $files
 EOF
 	    cd ..
 	fi
     fi
-    git commit -F /tmp/dcpmsg$$ $edit_git_msg
+    # Commit the changes and allow msg to be edited if -m not used
+    git commit -F ${msgfile} $edit_git_msg
+
+    rm ${msgfile}
 }
 
 # Which hosts get a commit
