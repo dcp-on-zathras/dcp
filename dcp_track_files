@@ -13,6 +13,7 @@ usage()
        -l  List files monitored by dcp for host or each host in list
        -r  Any directories will be marked to be recovered recursively
        -e  Add entries to the rsync exclusion list
+       -E  Exit to a subshell and manually edit tracking files
        -a  All hosts
        -h  <hosts_list_file> is a file containing list of hosts to
            monitor this file on
@@ -24,11 +25,12 @@ EOF
 }
 
 edit_git_msg="-e"
-while getopts "lrem:ah:" opt; do
+while getopts "lreEm:ah:" opt; do
     case $opt in
 	l ) list=1;;
 	r ) recurse=1;;
 	e ) exclude=1;;
+	E ) edit=1;;
 	m ) message=$OPTARG; edit_git_msg="";;
 	a ) host_list=$(all_hosts_);;
 	h ) host_list=$(cat $OPTARG);;
@@ -87,26 +89,35 @@ track_ () {
 	return
 	}
 
-    # Which list to update?
-    list_f="files"
-    if [[ $recurse == 1 ]]; then list_f="dirs"; fi
-    if [[ $exclude == 1 ]]; then list_f="exclude_patterns"; fi
-
-    # Update the list_f
-    for target in "$@"; do
-	echo $target >> $list_f
-    done
-
-    # Strip leading /, sort and remove dupes
-    if [[ $exclude == 1 ]]; then
-	cat $list_f | sort | uniq >$list_f.sorted
+    if [[ $edit == 1 ]]; then
+	if [[ $EDITOR == "*emacs*" ]]; then
+	    $EDITOR .
+	else
+	    echo "Please edit files/dirs/exclude_patterns and exit this subshell when done"
+	    $SHELL
+	fi
+	git add files dirs exclude_patterns
     else
-	cat $list_f | sed -e s'-^/--' | sort | uniq >$list_f.sorted
-    fi
-    rm $list_f
-    mv $list_f.sorted $list_f
+        # Which list to update?
+	list_f="files"
+	if [[ $recurse == 1 ]]; then list_f="dirs"; fi
+	if [[ $exclude == 1 ]]; then list_f="exclude_patterns"; fi
 
-    git add $list_f
+        # Update the list_f
+	for target in "$@"; do
+	    echo $target >> $list_f
+	done
+
+        # Strip leading /, sort and remove dupes
+	if [[ $exclude == 1 ]]; then
+	    cat $list_f | sort | uniq >$list_f.sorted
+	else
+	    cat $list_f | sed -e s'-^/--' | sort | uniq >$list_f.sorted
+	fi
+	rm $list_f
+	mv $list_f.sorted $list_f
+	git add $list_f
+    fi
     # Ask for a comment
     cat <<EOF > /tmp/dcpmsg$$
 $host : Updated $list_f list
