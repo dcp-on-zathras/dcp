@@ -98,15 +98,17 @@ EOF
     # Commit the changes and allow msg to be edited if -m not used
     git commit -F ${msgfile} $edit_git_msg
 
-    # Grab the top line of the commit message
-    msg=$(git show --pretty='format:%B' HEAD | head -1)
+    if [[ ! $NOTIFY_OFF ]]; then
+        # Grab the top line of the commit message
+	msg=$(git show --pretty='format:%B' HEAD | head -1)
 
-    # Notify irc
-    IRC_MSG="#meego-it dcp: $host updated by $GIT_AUTHOR_NAME : $(head -1 ${msgfile})"
-    for x in "${MSG_REWRITES[@]}"; do
-      IRC_MSG=$( echo "$IRC_MSG" | sed -r "$x" )
-    done
-    echo "$IRC_MSG" | nc ircbot 5050
+        # Notify irc
+	IRC_MSG="#meego-it dcp: $host updated by $GIT_AUTHOR_NAME : $(head -1 ${msgfile})"
+	for x in "${MSG_REWRITES[@]}"; do
+	    IRC_MSG=$( echo "$IRC_MSG" | sed -r "$x" )
+	done
+	echo "$IRC_MSG" | nc ircbot 5050
+    fi
     #echo "#meego-it dcp_commit: config for $host updated by $GIT_AUTHOR_NAME  : $(head -1 ${msgfile})"| sed -r 's,#([[:digit:]]+),https://bugs.meego.com/show_bug.cgi?id=\1,g' | nc ircbot 5050
 
     rm ${msgfile}
